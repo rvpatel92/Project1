@@ -25,13 +25,13 @@ public class CoreSearchImpl implements CoreSearch {
     /*
     A very simple tokenization.
      */
-    public String[] tokenize(String title) {
-        return title.split(" ");
+    public String[] tokenize(String body) {
+        return body.split(" ");
     }
 
     public void addToIndex(Document document) {
 
-        String[] tokens = tokenize(document.getTitle());
+        String[] tokens = tokenize(document.getBody());
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
         }
