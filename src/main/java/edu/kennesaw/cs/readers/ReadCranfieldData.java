@@ -47,5 +47,14 @@ public class ReadCranfieldData {
         }.getType();
         return gson.fromJson(br, type);
     }
+
+    public static List<StopWords> stopWords()
+    {
+        Gson gson = new Gson();
+        BufferedReader br = new BufferedReader(new InputStreamReader(loadResource("/stopwords.json")));
+        Type type = new TypeToken<List<StopWords>>() {
+        }.getType();
+        return gson.fromJson(br, type);
+    }
 }
 

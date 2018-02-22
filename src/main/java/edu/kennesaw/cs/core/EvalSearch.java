@@ -1,9 +1,6 @@
 package edu.kennesaw.cs.core;
 
-import edu.kennesaw.cs.readers.Document;
-import edu.kennesaw.cs.readers.Query;
-import edu.kennesaw.cs.readers.ReadCranfieldData;
-import edu.kennesaw.cs.readers.Relevance;
+import edu.kennesaw.cs.readers.*;
 
 import java.util.*;
 
@@ -39,9 +36,7 @@ public class EvalSearch {
             coreSearch.addToIndex(document);
         }
 
-
         calculateIdeal();
-
 
         List<Double> ndcgs = new ArrayList<Double>();
         List<Query> queries = ReadCranfieldData.readQueries();

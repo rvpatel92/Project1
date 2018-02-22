@@ -1,6 +1,8 @@
 package edu.kennesaw.cs.core;
 
 import edu.kennesaw.cs.readers.Document;
+import edu.kennesaw.cs.readers.StopWords;
+
 import java.util.List;
 
 

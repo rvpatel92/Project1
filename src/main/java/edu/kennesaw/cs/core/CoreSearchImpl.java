@@ -1,6 +1,8 @@
 package edu.kennesaw.cs.core;
 
 import edu.kennesaw.cs.readers.Document;
+import edu.kennesaw.cs.readers.ReadCranfieldData;
+import edu.kennesaw.cs.readers.StopWords;
 
 import java.util.*;
 
@@ -17,20 +19,50 @@ public class CoreSearchImpl implements CoreSearch {
 
 
     Map<String, List<Integer>> invertedIndex = new HashMap<String, List<Integer>>();
+    List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
 
-    public void init() {
-    }
+    public void init() {}
 
     /*
     A very simple tokenization.
-     */
+    */
     public String[] tokenize(String title, String body) {
         Set<String> tokenizeIndex = new HashSet<String>();
         Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
+        removeSpecialCharacters(tokenizeIndex);
+        removeStopWords(tokenizeIndex);
+        normalize(tokenizeIndex);
 
         return tokenizeIndex.toArray(new String[tokenizeIndex.size()]);
     }
+
+    private void removeSpecialCharacters(Set<String> tokenizeIndex)
+    {
+        for(String token : tokenizeIndex)
+        {
+            if (token.contains("@"))
+            {
+                token.replaceAll("[^a-zA-Z0-9\\s+]", "");
+            }
+            else
+            {}
+        }
+    }
+
+    private void removeStopWords(Set<String> tokenizeIndex)
+    {
+        Set<String> stopWordsSet  = new HashSet<String>(Arrays.asList(stopWordsArray.get(0).getwords().split(" ")));
+        for(String token : tokenizeIndex)
+        {
+            if (stopWordsSet.contains(token))
+            {
+                tokenizeIndex.remove(token);
+            }
+        }
+    }
+
+    private void normalize(Set<String> tokenizeIndex) {}
 
     public void addToIndex(Document document) {
 
@@ -40,6 +72,7 @@ public class CoreSearchImpl implements CoreSearch {
             addTokenToIndex(token, document.getId());
         }
     }
+
     private void addTokenToIndex(String token, int docId) {
 
         if (invertedIndex.containsKey(token)) {
