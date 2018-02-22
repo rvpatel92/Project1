@@ -19,25 +19,27 @@ public class CoreSearchImpl implements CoreSearch {
     Map<String, List<Integer>> invertedIndex = new HashMap<String, List<Integer>>();
 
     public void init() {
-
     }
 
     /*
     A very simple tokenization.
      */
-    public String[] tokenize(String body) {
-        return body.split(" ");
+    public String[] tokenize(String title, String body) {
+        Set<String> tokenizeIndex = new HashSet<String>();
+        Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
+        Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
+
+        return tokenizeIndex.toArray(new String[tokenizeIndex.size()]);
     }
 
     public void addToIndex(Document document) {
 
-        String[] tokens = tokenize(document.getBody());
+
+        String[] tokens = tokenize(document.getTitle(), document.getBody());
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
         }
-
     }
-
     private void addTokenToIndex(String token, int docId) {
 
         if (invertedIndex.containsKey(token)) {
@@ -56,7 +58,7 @@ public class CoreSearchImpl implements CoreSearch {
     A very simple search implementation.
      */
     public List<Integer> search(String query) {
-        String[] queryTokens = removeNotIndexTokens(query.split(" "));
+        String[] queryTokens = removeNotIndexTokens(query.toLowerCase().split(" "));
         List<Integer> mergedDocIds = new ArrayList<Integer>();
         if (queryTokens.length == 0) return mergedDocIds;
         int index = 1;
@@ -85,7 +87,8 @@ public class CoreSearchImpl implements CoreSearch {
 
 
     /*
-    AND Merging postings!!
+    Originally was AND Merging postings!!
+    Now its OR Merging postings!!
      */
     public List<Integer> mergeTwoDocIds(List<Integer> docList1, List<Integer> docList2) {
         int docIndex1 = 0;
@@ -97,12 +100,13 @@ public class CoreSearchImpl implements CoreSearch {
                 docIndex1++;
                 docIndex2++;
             } else if (docList1.get(docIndex1) < docList2.get(docIndex2)) {
+                mergedList.add(docList1.get(docIndex1));
                 docIndex1++;
             } else if (docList1.get(docIndex1) > docList2.get(docIndex2)) {
+                mergedList.add(docList2.get(docIndex2));
                 docIndex2++;
             }
         }
-
         return mergedList;
     }
 }
