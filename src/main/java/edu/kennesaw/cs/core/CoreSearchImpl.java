@@ -30,39 +30,25 @@ public class CoreSearchImpl implements CoreSearch {
         Set<String> tokenizeIndex = new HashSet<String>();
         Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
-        removeSpecialCharacters(tokenizeIndex);
-        removeStopWords(tokenizeIndex);
-        normalize(tokenizeIndex);
+        stopWords(tokenizeIndex);
 
         return tokenizeIndex.toArray(new String[tokenizeIndex.size()]);
     }
 
-    private void removeSpecialCharacters(Set<String> tokenizeIndex)
-    {
-        for(String token : tokenizeIndex)
-        {
-            if (token.contains("@"))
-            {
-                token.replaceAll("[^a-zA-Z0-9\\s+]", "");
-            }
-            else
-            {}
-        }
-    }
 
-    private void removeStopWords(Set<String> tokenizeIndex)
+    private void stopWords(Set<String> tokenList)
     {
         Set<String> stopWordsSet  = new HashSet<String>(Arrays.asList(stopWordsArray.get(0).getwords().split(" ")));
-        for(String token : tokenizeIndex)
+        for(String stopWord : stopWordsSet)
         {
-            if (stopWordsSet.contains(token))
+            if (tokenList.contains(stopWord))
             {
-                tokenizeIndex.remove(token);
+                tokenList.remove(stopWord);
             }
         }
+        Set<String> test = new HashSet<String>(tokenList);
+        specialCharactersRemoval(tokenList, test);
     }
-
-    private void normalize(Set<String> tokenizeIndex) {}
 
     public void addToIndex(Document document) {
 
@@ -70,6 +56,15 @@ public class CoreSearchImpl implements CoreSearch {
         String[] tokens = tokenize(document.getTitle(), document.getBody());
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
+        }
+    }
+
+
+    private void specialCharactersRemoval(Set<String> tokenList, Set<String> test)
+    {
+        for (String token : test)
+        {
+
         }
     }
 
@@ -120,7 +115,6 @@ public class CoreSearchImpl implements CoreSearch {
 
 
     /*
-    Originally was AND Merging postings!!
     Now its OR Merging postings!!
      */
     public List<Integer> mergeTwoDocIds(List<Integer> docList1, List<Integer> docList2) {
