@@ -26,28 +26,17 @@ public class CoreSearchImpl implements CoreSearch {
     /*
     A very simple tokenization.
     */
+
     public String[] tokenize(String title, String body) {
         Set<String> tokenizeIndex = new HashSet<String>();
         Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
-        stopWords(tokenizeIndex);
-
-        return tokenizeIndex.toArray(new String[tokenizeIndex.size()]);
-    }
-
-
-    private void stopWords(Set<String> tokenList)
-    {
-        Set<String> stopWordsSet  = new HashSet<String>(Arrays.asList(stopWordsArray.get(0).getwords().split(" ")));
-        for(String stopWord : stopWordsSet)
-        {
-            if (tokenList.contains(stopWord))
-            {
-                tokenList.remove(stopWord);
-            }
-        }
-        Set<String> test = new HashSet<String>(tokenList);
-        specialCharactersRemoval(tokenList, test);
+        ArrayList<String> improveTokens = new ArrayList<String>(tokenizeIndex);
+        removeEmptyValues(improveTokens);
+        specialCharactersRemoval(improveTokens);
+        stopWords(improveTokens);
+        Set<String> finalTokenizeIndex = new HashSet<String>(improveTokens);
+        return finalTokenizeIndex.toArray(new String[tokenizeIndex.size()]);
     }
 
     public void addToIndex(Document document) {
@@ -56,15 +45,6 @@ public class CoreSearchImpl implements CoreSearch {
         String[] tokens = tokenize(document.getTitle(), document.getBody());
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
-        }
-    }
-
-
-    private void specialCharactersRemoval(Set<String> tokenList, Set<String> test)
-    {
-        for (String token : test)
-        {
-
         }
     }
 
@@ -135,5 +115,66 @@ public class CoreSearchImpl implements CoreSearch {
             }
         }
         return mergedList;
+    }
+
+    private void removeEmptyValues(ArrayList<String> tokenList) {
+        ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
+        for (String token : duplicateList)
+        {
+            if (token.length() == 0)
+            {
+                tokenList.remove(token);
+            }
+        }
+    }
+
+    private void stopWords(ArrayList<String> tokenList)
+    {
+        Set<String> stopWordsSet  = new HashSet<String>(Arrays.asList(stopWordsArray.get(0).getwords().split(" ")));
+
+        for(String stopWord : stopWordsSet)
+        {
+            if (tokenList.contains(stopWord))
+            {
+                tokenList.remove(stopWord);
+            }
+        }
+    }
+
+    private void specialCharactersRemoval(ArrayList<String> tokenList)
+    {
+        ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
+        char[] specialCharacters = {'.', '?', '/', '\\', '(', ')', '\"', '\'', '-', '+', ':', ','};
+        for(int i = 0; i < duplicateList.size(); i++)
+        {
+            boolean changeToken = false;
+            String token = duplicateList.get(i);
+            String scRemovalToken = token;
+            for(int j = 0; j < specialCharacters.length; j++)
+            {
+                if(token.charAt(0) == specialCharacters[j] )
+                {
+                    scRemovalToken = token.substring(1, token.length());
+                    changeToken = true;
+                    if(token.length() > 1 && scRemovalToken.charAt(scRemovalToken.length()-1) == specialCharacters[j])
+                    {
+                        scRemovalToken = scRemovalToken.substring(0, scRemovalToken.length()-1);
+                        changeToken = true;
+                        break;
+                    }
+                }
+                if(token.length() > 1 && token.charAt(token.length()-1) == specialCharacters[j])
+                {
+                    scRemovalToken = token.substring(0, token.length()-1);
+                    changeToken = true;
+                }
+            }
+            if (changeToken == true)
+            {
+                tokenList.remove(token);
+                tokenList.add(scRemovalToken);
+            }
+        }
+        removeEmptyValues(tokenList);
     }
 }
