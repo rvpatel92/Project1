@@ -33,7 +33,7 @@ public class CoreSearchImpl implements CoreSearch {
         Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
         ArrayList<String> improveTokens = new ArrayList<String>(tokenizeIndex);
-        Set<String> finalTokenizeIndex = normalizeTokens(improveTokens);
+        Set<String> finalTokenizeIndex = finalTokenList(improveTokens);
         return finalTokenizeIndex.toArray(new String[finalTokenizeIndex.size()]);
     }
 
@@ -85,7 +85,7 @@ public class CoreSearchImpl implements CoreSearch {
      */
     private String[] removeNotIndexTokens(String split) {
         ArrayList<String> improveTokens = new ArrayList<String>(Arrays.asList(split.toLowerCase().split(" ")));
-        Set<String> finalTokenizeIndex = normalizeTokens(improveTokens);
+        Set<String> finalTokenizeIndex = finalTokenList(improveTokens);
         List<String> indexedTokens = new ArrayList<String>();
         for (String token : finalTokenizeIndex) {
             if (invertedIndex.containsKey(token)) indexedTokens.add(token);
@@ -116,12 +116,13 @@ public class CoreSearchImpl implements CoreSearch {
         return mergedList;
     }
 
-    private Set<String> normalizeTokens(ArrayList<String> tokenList)
+    private Set<String> finalTokenList(ArrayList<String> tokenList)
     {
         removeEmptyValues(tokenList);
         specialCharactersRemoval(tokenList);
         stopWords(tokenList);
         removeSCharacterInsideToken(tokenList);
+        normalizeTokens(tokenList);
         Set<String> finalTokenizeIndex = new HashSet<String>(tokenList);
         return finalTokenizeIndex;
     }
@@ -134,6 +135,7 @@ public class CoreSearchImpl implements CoreSearch {
             {
                 tokenList.remove(token);
             }
+            //(token.matches("[0-9]+") && token.length() > 0)
         }
     }
 
@@ -153,7 +155,7 @@ public class CoreSearchImpl implements CoreSearch {
     private void specialCharactersRemoval(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
-        char[] specialCharacters = {'.', '?', '/', '\\', '(', ')', '\"', '\'', '-', '+', ':', ','};
+        char[] specialCharacters = {'.', '?', ',', '!', '/',  '=', '(', ')', '*', '#', '$', '%', '\"', '\'', '-', '+', ':', '\\'};
         for(int i = 0; i < duplicateList.size(); i++)
         {
             boolean changeToken = false;
@@ -190,7 +192,7 @@ public class CoreSearchImpl implements CoreSearch {
     /***
      * uses some advice from this link:
      *      https://stackoverflow.com/questions/4283351/how-to-replace-special-characters-in-a-string
-     *
+     *      https://stackoverflow.com/questions/1795402/java-check-a-string-if-there-is-a-special-character-in-it
      * @param tokenList
      */
     private void removeSCharacterInsideToken(ArrayList<String> tokenList)
@@ -211,5 +213,24 @@ public class CoreSearchImpl implements CoreSearch {
         specialCharactersRemoval(tokenList);
     }
 
-
+    private void normalizeTokens(ArrayList<String> tokenList)
+    {
+        ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
+        String[] endsWithList = {"s", "ed", "ing", "ies"};
+        for (int i = 0; i < duplicateList.size(); i++)
+        {
+            String token = duplicateList.get(i);
+            String scRemovalToken = token;
+            for(int j = 0; j < endsWithList.length; j++)
+            {
+                if(token.endsWith(endsWithList[j]))
+                {
+                    scRemovalToken = scRemovalToken.substring(0, scRemovalToken.length() - endsWithList[j].length());
+                    tokenList.remove(token);
+                    tokenList.add(scRemovalToken);
+                }
+            }
+        }
+        removeEmptyValues(tokenList);
+    }
 }
