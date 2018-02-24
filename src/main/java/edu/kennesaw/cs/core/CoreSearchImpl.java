@@ -5,6 +5,7 @@ import edu.kennesaw.cs.readers.ReadCranfieldData;
 import edu.kennesaw.cs.readers.StopWords;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /*
 This class is an example implementation of the CoreSearch, you can either modify or write another implementation of the Core Search.
@@ -32,11 +33,8 @@ public class CoreSearchImpl implements CoreSearch {
         Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
         ArrayList<String> improveTokens = new ArrayList<String>(tokenizeIndex);
-        removeEmptyValues(improveTokens);
-        specialCharactersRemoval(improveTokens);
-        stopWords(improveTokens);
-        Set<String> finalTokenizeIndex = new HashSet<String>(improveTokens);
-        return finalTokenizeIndex.toArray(new String[tokenizeIndex.size()]);
+        Set<String> finalTokenizeIndex = normalizeTokens(improveTokens);
+        return finalTokenizeIndex.toArray(new String[finalTokenizeIndex.size()]);
     }
 
     public void addToIndex(Document document) {
@@ -66,7 +64,7 @@ public class CoreSearchImpl implements CoreSearch {
     A very simple search implementation.
      */
     public List<Integer> search(String query) {
-        String[] queryTokens = removeNotIndexTokens(query.toLowerCase().split(" "));
+        String[] queryTokens = removeNotIndexTokens(query);
         List<Integer> mergedDocIds = new ArrayList<Integer>();
         if (queryTokens.length == 0) return mergedDocIds;
         int index = 1;
@@ -85,14 +83,15 @@ public class CoreSearchImpl implements CoreSearch {
     /*
     Ignore terms in query that are not in Index
      */
-    private String[] removeNotIndexTokens(String[] split) {
+    private String[] removeNotIndexTokens(String split) {
+        ArrayList<String> improveTokens = new ArrayList<String>(Arrays.asList(split.toLowerCase().split(" ")));
+        Set<String> finalTokenizeIndex = normalizeTokens(improveTokens);
         List<String> indexedTokens = new ArrayList<String>();
-        for (String token : split) {
+        for (String token : finalTokenizeIndex) {
             if (invertedIndex.containsKey(token)) indexedTokens.add(token);
         }
         return indexedTokens.toArray(new String[indexedTokens.size()]);
     }
-
 
     /*
     Now its OR Merging postings!!
@@ -115,6 +114,16 @@ public class CoreSearchImpl implements CoreSearch {
             }
         }
         return mergedList;
+    }
+
+    private Set<String> normalizeTokens(ArrayList<String> tokenList)
+    {
+        removeEmptyValues(tokenList);
+        specialCharactersRemoval(tokenList);
+        stopWords(tokenList);
+        removeSCharacterInsideToken(tokenList);
+        Set<String> finalTokenizeIndex = new HashSet<String>(tokenList);
+        return finalTokenizeIndex;
     }
 
     private void removeEmptyValues(ArrayList<String> tokenList) {
@@ -152,7 +161,7 @@ public class CoreSearchImpl implements CoreSearch {
             String scRemovalToken = token;
             for(int j = 0; j < specialCharacters.length; j++)
             {
-                if(token.charAt(0) == specialCharacters[j] )
+                if(token.charAt(0) == specialCharacters[j])
                 {
                     scRemovalToken = token.substring(1, token.length());
                     changeToken = true;
@@ -177,4 +186,30 @@ public class CoreSearchImpl implements CoreSearch {
         }
         removeEmptyValues(tokenList);
     }
+
+    /***
+     * uses some advice from this link:
+     *      https://stackoverflow.com/questions/4283351/how-to-replace-special-characters-in-a-string
+     *
+     * @param tokenList
+     */
+    private void removeSCharacterInsideToken(ArrayList<String> tokenList)
+    {
+        ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
+        String thePattern = "[^A-Za-z0-9]+";
+        for (String token : duplicateList)
+        {
+            String scRemovalToken = token;
+            if (Pattern.compile(thePattern).matcher(token).find() && token.length() > 1)
+            {
+                token = token.replaceAll("[^a-zA-Z]+"," ");
+                tokenList.remove(scRemovalToken);
+                Collections.addAll(tokenList, token.toLowerCase().split(" "));
+            }
+        }
+        removeEmptyValues(tokenList);
+        specialCharactersRemoval(tokenList);
+    }
+
+
 }
