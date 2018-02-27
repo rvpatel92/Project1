@@ -38,8 +38,6 @@ public class CoreSearchImpl implements CoreSearch {
     }
 
     public void addToIndex(Document document) {
-
-
         String[] tokens = tokenize(document.getTitle(), document.getBody());
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
@@ -67,17 +65,70 @@ public class CoreSearchImpl implements CoreSearch {
         String[] queryTokens = removeNotIndexTokens(query);
         List<Integer> mergedDocIds = new ArrayList<Integer>();
         if (queryTokens.length == 0) return mergedDocIds;
-        int index = 1;
-        if (queryTokens.length == 1)
-            invertedIndex.get(queryTokens[0]);
-
-        List<Integer> initial = invertedIndex.get(queryTokens[0]);
+        if (queryTokens.length == 1) invertedIndex.get(queryTokens[0]);
+        int index = 0;
+        //List<Integer> initial = invertedIndex.get(queryTokens[0]);
+        Map<String, Double> initial = new HashMap<String, Double>();
+        List<List<Integer>> invertedValuesList = new ArrayList<List<Integer>>(invertedIndex.values());
+        Map<Integer, Integer> totalCountPerDoc = totalCountPerDocument(invertedValuesList);
         while (index < queryTokens.length) {
-            initial = mergeTwoDocIds(initial, invertedIndex.get(queryTokens[index]));
+            //initial = mergeTwoDocIds(initial, invertedIndex.get(queryTokens[index]));
+            //initial.put(queryTokens[index], calculatetfidf(queryTokens[index], totalCountPerDoc));
+            if(index == 0)
+            {
+                initial = calculatetfidf(queryTokens[index], totalCountPerDoc);
+            }
+            else
+            {
+                Map<String, Double> temp = calculatetfidf(queryTokens[index], totalCountPerDoc);
+                for(int i = 1; i <= temp.size(); i++)
+                {
+                    System.out.println(i);
+                    double total = initial.get(String.valueOf(i)) + temp.get(String.valueOf(i));
+                    initial.put(String.valueOf(i), total);
+                }
+            }
             index++;
         }
 
-        return initial;
+        List<Double> maxScore = new ArrayList<Double>(initial.values());
+        double highestScore = Collections.max(maxScore);
+        return sortMap(initial, highestScore);
+    }
+
+    private List<Integer> sortMap(Map<String, Double> initial, Double highestScore)
+    {
+        List<Integer> docIdList = new ArrayList<Integer>();
+        for (String docId : initial.keySet()) {
+            if (initial.get(docId).equals(highestScore)) {
+                docIdList.add(Integer.parseInt(docId));
+            }
+        }
+        return docIdList;
+    }
+
+    private Map<Integer, Integer> totalCountPerDocument(List<List<Integer>> invertedValuesList)
+    {
+        Map<Integer, Integer> listOfTest = new HashMap<Integer, Integer>();
+        for(int i = 1; i <= 1400; i++)
+        {
+            int total;
+            List<List<Integer>> testList2 = new ArrayList<List<Integer>>();
+            for (List<Integer> docIds : invertedValuesList)
+            {
+                if(docIds.contains(i))
+                {
+                    testList2.add(docIds);
+                    total = testList2.size();
+                    listOfTest.put(i, total);
+                }
+            }
+            if(testList2.size() == 0)
+            {
+                listOfTest.put(i, 0);
+            }
+        }
+        return listOfTest;
     }
 
     /*
@@ -232,5 +283,34 @@ public class CoreSearchImpl implements CoreSearch {
             }
         }
         removeEmptyValues(tokenList);
+    }
+
+    private Map<String, Double> calculatetfidf(String queryToken, Map<Integer, Integer> totalCountPerDoc)
+    {
+        Map<String, Double> tfidfMapPerQueryDoc = new HashMap<String, Double>();
+        for(int i = 1; i <= totalCountPerDoc.size(); i++)
+        {
+            double tf = tf(queryToken, totalCountPerDoc.get(i), i);
+            double idf = idf(queryToken);
+            double tfidf = tfIdf(tf,idf);
+            tfidfMapPerQueryDoc.put(String.valueOf(i), tfidf);
+        }
+        return tfidfMapPerQueryDoc;
+    }
+
+    private double tf(String term, Integer docSize, Integer docId) {
+        double N = invertedIndex.get(term).contains(docId) ? 1 : 0;
+        double df = docSize;
+        if (df == 0)
+            return 0;
+        return (N / df);
+    }
+
+    private double idf(String term) {
+        return Math.log(ReadCranfieldData.readDocuments().size() / invertedIndex.get(term).size());
+    }
+
+    private double tfIdf(double tf, double idf) {
+        return tf*idf;
     }
 }
