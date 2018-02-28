@@ -22,7 +22,8 @@ public class CoreSearchImpl implements CoreSearch {
 
     Map<String, List<Integer>> invertedIndex = new HashMap<String, List<Integer>>();
     Map<String, Double> invertedIDFIndex = new HashMap<String, Double>();
-    Map<Integer ,Double> tfDocID = new HashMap<>();
+    Map<Integer ,Double> tfDocID = new HashMap<>(); //todo need to populate the term frequency this map based on document.
+                                                    //todo Believe all terms should be the same just different length based on document
     List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
 
     public void init() {}
