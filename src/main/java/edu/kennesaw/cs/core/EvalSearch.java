@@ -48,7 +48,8 @@ public class EvalSearch {
                 throw new RuntimeException( "Search results should not have duplicates");
             }
             for (int i = 0; i < docs.size(); i++) {
-                String key = createKey(query.getId(), docs.get(i));
+                //String key = createKey(query.getId(), docs.get(i));
+                String key = createKey(query.getId(), docsWithDuplicates.get(i));
                 if (relevanceMap.containsKey(key)) {
                     queryScore = queryScore + (relevanceMap.get(key) / (Math.log(i + 2) / log2));
                 }

@@ -6,6 +6,7 @@ import edu.kennesaw.cs.readers.StopWords;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /*
 This class is an example implementation of the CoreSearch, you can either modify or write another implementation of the Core Search.
@@ -21,10 +22,10 @@ public class CoreSearchImpl implements CoreSearch {
 
     Map<String, List<Integer>> invertedIndex = new HashMap<String, List<Integer>>();
     Map<String, Double> invertedIDFIndex = new HashMap<String, Double>();
+    Map<Integer ,Double> tfDocID = new HashMap<>();
     List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
 
     public void init() {}
-
     /*
     A very simple tokenization.
     */
@@ -64,17 +65,34 @@ public class CoreSearchImpl implements CoreSearch {
      */
     public List<Integer> search(String query) {
         String[] queryTokens = removeNotIndexTokens(query);
+        int listOfDocSize = ReadCranfieldData.readDocuments().size();
         List<Integer> mergedDocIds = new ArrayList<Integer>();
-        idfTokenList(invertedIndex);
+        idfTokenList(listOfDocSize, invertedIndex);
+        Map<Integer, Double> crossProductList = new HashMap<Integer, Double>();
+        if (queryTokens.length == 0)
+            return mergedDocIds;
+        if (queryTokens.length == 1)
+            mergedDocIds = invertedIndex.get(queryTokens[0]);
+        else
+            mergedDocIds = rankedDocuments(queryTokens, listOfDocSize, crossProductList);
+
+
+        return mergedDocIds;
+    }
+
+    //https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/
+    private List<Integer> rankedDocuments(String[] queryTokens, int listOfDocSize, Map<Integer, Double> crossProductList)
+    {
         Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
-        Map<Integer, Double> crossProduct = new HashMap<Integer, Double>();
-        if (queryTokens.length == 0) return mergedDocIds;
-        if (queryTokens.length == 1) invertedIndex.get(queryTokens[0]);
-        for(int i = 1; i < ReadCranfieldData.readDocuments().size(); i++)
+        List<Integer> mergedDocIds;
+        for(int i = 1; i <= listOfDocSize; i++)
         {
-            Vector<Double> temp = convertDocumentToVector(i);
+            Vector<Double> temp = convertDocumentToVector(i, listOfDocSize);
             double sum = dotProduct(vectorQuery, temp);
-            crossProduct.put(i, sum);
+            if(sum > 0)
+            {
+                crossProductList.put(i, sum);
+            }
         }
         /*int index = 0;
         List<Integer> initial = invertedIndex.get(queryTokens[0]);
@@ -82,8 +100,18 @@ public class CoreSearchImpl implements CoreSearch {
             initial = mergeTwoDocIds(initial, invertedIndex.get(queryTokens[index]));
             index++;
         }*/
-        return null;
+
+        //Integer key = Collections.max(crossProduct.entrySet(), Map.Entry.comparingByValue()).getKey();
+        mergedDocIds = crossProductList.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getValue))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        Collections.reverse(mergedDocIds);
+
+        return mergedDocIds;
     }
+
 
     private double dotProduct(Vector<Double> a, Vector<Double> b) {
         double sum = 0;
@@ -93,14 +121,25 @@ public class CoreSearchImpl implements CoreSearch {
         return sum;
     }
 
-    private Vector<Double> convertDocumentToVector(int docId)
+    private Vector<Double> convertDocumentToVector(int docId, int listOfDocSize)
     {
         Vector<Double> temp = new Vector<Double>(Collections.nCopies(invertedIndex.size(), 0.0));
-        List<String> invertedKeyList = new ArrayList<String>(invertedIndex.keySet());
-        if(invertedIndex.values().contains(docId))
+        List<String> listOfWords = new ArrayList<String>();
+        for(Map.Entry<String, List<Integer>> token : invertedIndex.entrySet())
         {
-            int tempLocation = invertedKeyList.indexOf(docId);
-            temp.set(tempLocation, invertedIDFIndex.get(docId));
+            if(token.getValue().contains(docId))
+            {
+                listOfWords.add(token.getKey());
+            }
+        }
+
+        List<String> invertedKeyList = new ArrayList<String>(invertedIndex.keySet());
+        double test = 0;
+        for(int i = 0; i < listOfWords.size(); i++)
+        {
+            int tempLocation = invertedKeyList.indexOf(listOfWords.get(i));
+            temp.set(tempLocation, (1.0/listOfWords.size()) * invertedIDFIndex.get(listOfWords.get(i)));
+            test += (1.0/listOfWords.size()) * invertedIDFIndex.get(listOfWords.get(i));
         }
         return temp;
     }
@@ -112,23 +151,22 @@ public class CoreSearchImpl implements CoreSearch {
         for(int i = 0; i < queryTokens.length; i++)
         {
             int tempLocation = invertedKeyList.indexOf(queryTokens[i]);
-            temp.set(tempLocation, invertedIDFIndex.get(queryTokens[i]));
+            temp.set(tempLocation, (1.0/queryTokens.length) * invertedIDFIndex.get(queryTokens[i]));
         }
 
         return temp;
     }
 
-    private void idfTokenList (Map<String, List<Integer>> invertedIndex)
+    private void idfTokenList (int listOfDocSize, Map<String, List<Integer>> invertedIndex)
     {
-        for(Map.Entry<String, List<Integer>> token : invertedIndex.entrySet())
-        {
-            invertedIDFIndex.put(token.getKey(), calculateIDF(token.getValue().size()));
+        for (Map.Entry<String, List<Integer>> token : invertedIndex.entrySet()) {
+            invertedIDFIndex.put(token.getKey(), calculateIDF(listOfDocSize, token.getValue().size()));
         }
     }
 
-    private Double calculateIDF(int docIdsListSize)
+    private Double calculateIDF(int listOfDocSize, int docIdsListSize)
     {
-        return (Math.log10(ReadCranfieldData.readDocuments().size() / docIdsListSize));
+        return (Math.log10(listOfDocSize / docIdsListSize));
     }
 
     /*
@@ -147,7 +185,7 @@ public class CoreSearchImpl implements CoreSearch {
     /*
     Now its OR Merging postings!!
      */
-    public List<Integer> mergeTwoDocIds(List<Integer> docList1, List<Integer> docList2) {
+    /*public List<Integer> mergeTwoDocIds(List<Integer> docList1, List<Integer> docList2) {
         int docIndex1 = 0;
         int docIndex2 = 0;
         List<Integer> mergedList = new ArrayList<Integer>();
@@ -165,7 +203,7 @@ public class CoreSearchImpl implements CoreSearch {
             }
         }
         return mergedList;
-    }
+    }*/
 
     private Set<String> finalTokenList(ArrayList<String> tokenList)
     {
