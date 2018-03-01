@@ -85,15 +85,16 @@ public class CoreSearchImpl implements CoreSearch {
     //https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/
     private List<Integer> rankedDocuments(String[] queryTokens, int listOfDocSize, Map<Integer, Double> crossProductList)
     {
+        //TODO save the vectorDocument info in static varible to reduce for loop
         Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
         List<Integer> mergedDocIds;
-        for(int i = 1; i <= listOfDocSize; i++)
+        for(Map.Entry<Integer, List<String>> wordsPerDoc : listOfDocTokens.entrySet())
         {
-            Vector<Double> temp = convertDocumentToVector(i);
+            Vector<Double> temp = convertDocumentToVector(wordsPerDoc.getKey());
             double sum = dotProduct(vectorQuery, temp);
             if(sum > 0)
             {
-                crossProductList.put(i, sum);
+                crossProductList.put(wordsPerDoc.getKey(), sum);
             }
         }
         mergedDocIds = crossProductList.entrySet().stream()
@@ -107,12 +108,17 @@ public class CoreSearchImpl implements CoreSearch {
     }
 
 
-    private double dotProduct(Vector<Double> a, Vector<Double> b) {
+    private double dotProduct(Vector<Double> vectorQuery, Vector<Double> vectorDocument) {
         double sum = 0;
-        for (int i = 0; i < a.size(); i++) {
-            sum += a.get(i) * b.get(i);
+        double sumOfVectorQuery = 0;
+        double sumofVectorDocument = 0;
+        for (int i = 0; i < vectorQuery.size(); i++) {
+            sum += vectorQuery.get(i) * vectorDocument.get(i);
+            sumOfVectorQuery += Math.pow(vectorQuery.get(i), 2);
+            sumofVectorDocument += Math.pow(vectorDocument.get(i), 2);
         }
-        return sum;
+
+        return (sum / (Math.sqrt(sumOfVectorQuery) * Math.sqrt(sumofVectorDocument)));
     }
 
     private Vector<Double> convertDocumentToVector(int docId)

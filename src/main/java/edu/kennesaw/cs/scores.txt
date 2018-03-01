@@ -4,28 +4,5 @@ specialCharactersRemoval(tokenList)         0.16891839060593092
 stopWords(tokenList)                        0.18867811597587117
 removeSCharacter(tokenList)                 0.19173207429363517
 tf/idf with jank cosine simularity          0.516067798941492
-
-
-
-private Map<Integer, Integer> totalCountPerDocument(List<List<Integer>> invertedValuesList)
-     {
-         Map<Integer, Integer> listOfTest = new HashMap<Integer, Integer>();
-         for(int i = 1; i <= 1400; i++)
-         {
-             int total;
-             List<List<Integer>> testList2 = new ArrayList<List<Integer>>();
-             for (List<Integer> docIds : invertedValuesList)
-             {
-                 if(docIds.contains(i))
-                 {
-                     testList2.add(docIds);
-                     total = testList2.size();
-                     listOfTest.put(i, total);
-                 }
-             }
-             if(testList2.size() == 0)
-             {
-                 listOfTest.put(i, 0);
-             }
-         }
-         return listOfTest;
+proper tf/idf with cosine simularity        0.5134411756925539
+fixed cosine simularity                     0.5555816554877308
