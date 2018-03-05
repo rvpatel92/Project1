@@ -24,6 +24,8 @@ public class CoreSearchImpl implements CoreSearch {
     Map<String, Double> invertedIDFIndex = new HashMap<>();
     Map<Integer ,List<String>> listOfDocTokens = new HashMap<>();
     List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
+    Vector<Double> vectorDocument = new Vector<>();
+    Map<Integer, Vector<Double>> tfPerDoc = new HashMap<>();
 
     public void init() {}
     /*
@@ -77,26 +79,32 @@ public class CoreSearchImpl implements CoreSearch {
         if (queryTokens.length == 1)
             mergedDocIds = invertedIndex.get(queryTokens[0]);
         else
-            mergedDocIds = rankedDocuments(queryTokens, listOfDocSize, crossProductList);
+            mergedDocIds = rankedDocuments(queryTokens, crossProductList);
 
         return mergedDocIds;
     }
 
     //https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/
-    private List<Integer> rankedDocuments(String[] queryTokens, int listOfDocSize, Map<Integer, Double> crossProductList)
+    private List<Integer> rankedDocuments(String[] queryTokens, Map<Integer, Double> crossProductList)
     {
-        //TODO save the vectorDocument info in static varible to reduce for loop
         Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
-        List<Integer> mergedDocIds;
-        for(Map.Entry<Integer, List<String>> wordsPerDoc : listOfDocTokens.entrySet())
+        if(vectorDocument.size() == 0)
         {
-            Vector<Double> temp = convertDocumentToVector(wordsPerDoc.getKey());
-            double sum = dotProduct(vectorQuery, temp);
+            convertDocumentToVector();
+        }
+        List<Integer> mergedDocIds;
+        int index = 1;
+        int size = listOfDocTokens.size();
+        while(index <= size)
+        {
+            double sum = dotProduct(vectorQuery, tfPerDoc.get(index));
             if(sum > 0)
             {
-                crossProductList.put(wordsPerDoc.getKey(), sum);
+                crossProductList.put(index, sum);
             }
+            index++;
         }
+
         mergedDocIds = crossProductList.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
@@ -106,7 +114,6 @@ public class CoreSearchImpl implements CoreSearch {
 
         return mergedDocIds;
     }
-
 
     private double dotProduct(Vector<Double> vectorQuery, Vector<Double> vectorDocument) {
         double sum = 0;
@@ -121,18 +128,24 @@ public class CoreSearchImpl implements CoreSearch {
         return (sum / (Math.sqrt(sumOfVectorQuery) * Math.sqrt(sumofVectorDocument)));
     }
 
-    private Vector<Double> convertDocumentToVector(int docId)
+    private void convertDocumentToVector()
     {
-        Vector<Double> temp = new Vector<>(Collections.nCopies(invertedIndex.size(), 0.0));
+        Vector<Double> temp;
         List<String> invertedKeyList = new ArrayList<>(invertedIndex.keySet());
-
-        int tempSize = listOfDocTokens.get(docId).size();
-        for (int i = 0; i < tempSize; i++)
+        int index = 1;
+        int size = listOfDocTokens.size();
+        while(index <= size)
         {
-            int tempLocation = invertedKeyList.indexOf(listOfDocTokens.get(docId).get(i));
-            temp.set(tempLocation, (1.0/tempSize) * invertedIDFIndex.get(listOfDocTokens.get(docId).get(i)));
+            temp = new Vector<>(Collections.nCopies(invertedIndex.size(), 0.0));
+            int tempSize = listOfDocTokens.get(index).size();
+            for (int i = 0; i < tempSize; i++)
+            {
+                int tempLocation = invertedKeyList.indexOf(listOfDocTokens.get(index).get(i));
+                temp.set(tempLocation, (1.0/tempSize) * invertedIDFIndex.get(listOfDocTokens.get(index).get(i)));
+            }
+            tfPerDoc.put(index, temp);
+            index++;
         }
-        return temp;
     }
 
     private Vector<Double> convertQueryToVector(String[] queryTokens)
@@ -196,6 +209,8 @@ public class CoreSearchImpl implements CoreSearch {
         stopWords(tokenList);
         removeSCharacterInsideToken(tokenList);
         normalizeTokens(tokenList);
+        removeSingleCharacters(tokenList);
+        removeNumbers(tokenList);
         Set<String> finalTokenizeIndex = new HashSet<>(tokenList);
         return finalTokenizeIndex;
     }
@@ -209,6 +224,31 @@ public class CoreSearchImpl implements CoreSearch {
                 tokenList.remove(token);
             }
             //(token.matches("[0-9]+") && token.length() > 0)
+        }
+    }
+
+    private void removeSingleCharacters(ArrayList<String> tokenList)
+    {
+        ArrayList<String> duplicateList = new ArrayList<>(tokenList);
+        for (String token : duplicateList)
+        {
+            if (token.length() == 1 &&  token.matches("[a-z]"))
+            {
+                tokenList.remove(token);
+            }
+        }
+    }
+
+    private void removeNumbers(ArrayList<String> tokenList)
+    {
+        ArrayList<String> duplicateList = new ArrayList<>(tokenList);
+        String regex = "\\d+";
+        for(String token : duplicateList)
+        {
+            if (token.matches(regex))
+            {
+                tokenList.remove(token);
+            }
         }
     }
 

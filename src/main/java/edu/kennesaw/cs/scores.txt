@@ -6,3 +6,4 @@ removeSCharacter(tokenList)                 0.19173207429363517
 tf/idf with jank cosine simularity          0.516067798941492
 proper tf/idf with cosine simularity        0.5134411756925539
 fixed cosine simularity                     0.5555816554877308
+revised code                                0.5553661424559784
