@@ -5,6 +5,7 @@ import edu.kennesaw.cs.readers.ReadCranfieldData;
 import edu.kennesaw.cs.readers.StopWords;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -128,6 +129,7 @@ public class CoreSearchImpl implements CoreSearch {
         return (sum / (Math.sqrt(sumOfVectorQuery) * Math.sqrt(sumofVectorDocument)));
     }
 
+    //calculate tf*idf for each term in document and storing it to vector Document
     private void convertDocumentToVector()
     {
         Vector<Double> temp;
@@ -204,15 +206,21 @@ public class CoreSearchImpl implements CoreSearch {
 
     private Set<String> finalTokenList(ArrayList<String> tokenList)
     {
-        removeEmptyValues(tokenList);
+        removeSpecialCharacterInsideToken(tokenList);
         specialCharactersRemoval(tokenList);
         stopWords(tokenList);
-        removeSCharacterInsideToken(tokenList);
         normalizeTokens(tokenList);
         removeSingleCharacters(tokenList);
         removeNumbers(tokenList);
+        removeEmptyValues(tokenList);
+        synonyms(tokenList);
         Set<String> finalTokenizeIndex = new HashSet<>(tokenList);
         return finalTokenizeIndex;
+    }
+
+    private void synonyms(ArrayList<String> tokenList)
+    {
+
     }
 
     private void removeEmptyValues(ArrayList<String> tokenList) {
@@ -274,32 +282,37 @@ public class CoreSearchImpl implements CoreSearch {
             boolean changeToken = false;
             String token = duplicateList.get(i);
             String scRemovalToken = token;
-            for(int j = 0; j < specialCharacters.length; j++)
+            Pattern p = Pattern.compile("[^a-z0-9 ]", Pattern.CASE_INSENSITIVE);
+            Matcher m = p.matcher(token);
+            boolean b = m.find();
+            if (b)
             {
-                if(token.charAt(0) == specialCharacters[j])
+                for(int j = 0; j < specialCharacters.length; j++)
                 {
-                    scRemovalToken = token.substring(1, token.length());
-                    changeToken = true;
-                    if(token.length() > 1 && scRemovalToken.charAt(scRemovalToken.length()-1) == specialCharacters[j])
+                    if(token.length() > 0 && token.charAt(0) == specialCharacters[j])
                     {
-                        scRemovalToken = scRemovalToken.substring(0, scRemovalToken.length()-1);
+                        scRemovalToken = token.substring(1, token.length());
                         changeToken = true;
-                        break;
+                        if(token.length() > 1 && scRemovalToken.charAt(scRemovalToken.length()-1) == specialCharacters[j])
+                        {
+                            scRemovalToken = scRemovalToken.substring(0, scRemovalToken.length()-1);
+                            changeToken = true;
+                            break;
+                        }
+                    }
+                    if(token.length() > 1 && token.charAt(token.length()-1) == specialCharacters[j])
+                    {
+                        scRemovalToken = token.substring(0, token.length()-1);
+                        changeToken = true;
                     }
                 }
-                if(token.length() > 1 && token.charAt(token.length()-1) == specialCharacters[j])
-                {
-                    scRemovalToken = token.substring(0, token.length()-1);
-                    changeToken = true;
-                }
             }
-            if (changeToken == true)
+            if (changeToken)
             {
                 tokenList.remove(token);
                 tokenList.add(scRemovalToken);
             }
         }
-        removeEmptyValues(tokenList);
     }
 
     /***
@@ -308,7 +321,7 @@ public class CoreSearchImpl implements CoreSearch {
      *      https://stackoverflow.com/questions/1795402/java-check-a-string-if-there-is-a-special-character-in-it
      * @param tokenList
      */
-    private void removeSCharacterInsideToken(ArrayList<String> tokenList)
+    private void removeSpecialCharacterInsideToken(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
         String thePattern = "[^A-Za-z0-9]+";
@@ -322,8 +335,6 @@ public class CoreSearchImpl implements CoreSearch {
                 Collections.addAll(tokenList, token.toLowerCase().split(" "));
             }
         }
-        removeEmptyValues(tokenList);
-        specialCharactersRemoval(tokenList);
     }
 
     private void normalizeTokens(ArrayList<String> tokenList)
@@ -344,7 +355,6 @@ public class CoreSearchImpl implements CoreSearch {
                 }
             }
         }
-        removeEmptyValues(tokenList);
     }
 }
 //precision number of relevant items retrieved out of retrieved items
