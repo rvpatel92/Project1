@@ -20,7 +20,7 @@ This class is an example implementation of the CoreSearch, you can either modify
  */
 public class CoreSearchImpl implements CoreSearch {
 
-
+    //variables defined when program starts so they won't keep getting initialized when going through each query
     Map<String, List<Integer>> invertedIndex = new HashMap<>();
     Map<String, Double> invertedIDFIndex = new HashMap<>();
     Map<Integer ,List<String>> listOfDocTokens = new HashMap<>();
@@ -29,19 +29,18 @@ public class CoreSearchImpl implements CoreSearch {
     Map<Integer, Vector<Double>> tfPerDoc = new HashMap<>();
 
     public void init() {}
-    /*
-    A very simple tokenization.
-    */
 
+    //craete tokens from the body and title and removing duplicates
     public String[] tokenize(String title, String body) {
         Set<String> tokenizeIndex = new HashSet<>();
-        Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
+        //Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
         ArrayList<String> improveTokens = new ArrayList<>(tokenizeIndex);
         Set<String> finalTokenizeIndex = finalTokenList(improveTokens);
         return finalTokenizeIndex.toArray(new String[finalTokenizeIndex.size()]);
     }
 
+    //getting the document body and title and begin process of adding token to index
     public void addToIndex(Document document) {
         String[] tokens = tokenize(document.getTitle(), document.getBody());
         for (String token : tokens) {
@@ -49,6 +48,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //check whether token exists in inverted index, if so add docId to token, if not then add token with docId
     private void addTokenToIndex(String token, int docId) {
 
         if (invertedIndex.containsKey(token)) {
@@ -63,9 +63,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
-    /*
-    A very simple search implementation.
-     */
+    //method to begin the process of searching for document that matches query using tf/idf with cosine simularity
     public List<Integer> search(String query) {
         String[] queryTokens = removeNotIndexTokens(query);
         int listOfDocSize = ReadCranfieldData.readDocuments().size();
@@ -86,6 +84,7 @@ public class CoreSearchImpl implements CoreSearch {
     }
 
     //https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/
+    //returning the ranked documents for each query that are greater than 0
     private List<Integer> rankedDocuments(String[] queryTokens, Map<Integer, Double> crossProductList)
     {
         Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
@@ -116,6 +115,7 @@ public class CoreSearchImpl implements CoreSearch {
         return mergedDocIds;
     }
 
+    //method to compute dotProduct between vector query and vector documnet
     private double dotProduct(Vector<Double> vectorQuery, Vector<Double> vectorDocument) {
         double sum = 0;
         double sumOfVectorQuery = 0;
@@ -129,7 +129,7 @@ public class CoreSearchImpl implements CoreSearch {
         return (sum / (Math.sqrt(sumOfVectorQuery) * Math.sqrt(sumofVectorDocument)));
     }
 
-    //calculate tf*idf for each term in document and storing it to vector Document
+    //calculate tf/idf for each token in document and adding that value to a vector
     private void convertDocumentToVector()
     {
         Vector<Double> temp;
@@ -150,6 +150,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //calculate tf/idf for each token in query and adding that value to a vector
     private Vector<Double> convertQueryToVector(String[] queryTokens)
     {
         Vector<Double> temp = new Vector<>(Collections.nCopies(invertedIndex.size(), 0.0));
@@ -162,7 +163,7 @@ public class CoreSearchImpl implements CoreSearch {
 
         return temp;
     }
-
+    //creating a map of each document with list of tokens in that document
     private void listOfDocumentTokensList(int listOfDocSize)
     {
         for(int i = 1; i <= listOfDocSize; i++)
@@ -179,6 +180,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //helper method to compute idf and adding it to a map
     private void idfTokenList (int listOfDocSize)
     {
         for (Map.Entry<String, List<Integer>> token : invertedIndex.entrySet()) {
@@ -186,6 +188,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //method to compute idf
     private Double calculateIDF(int listOfDocSize, int docIdsListSize)
     {
         return (Math.log10(listOfDocSize / docIdsListSize));
@@ -193,6 +196,7 @@ public class CoreSearchImpl implements CoreSearch {
 
     /*
     Ignore terms in query that are not in Index
+    didn't change this at all
      */
     private String[] removeNotIndexTokens(String split) {
         ArrayList<String> improveTokens = new ArrayList<>(Arrays.asList(split.toLowerCase().split(" ")));
@@ -204,6 +208,7 @@ public class CoreSearchImpl implements CoreSearch {
         return indexedTokens.toArray(new String[indexedTokens.size()]);
     }
 
+    //different helper methods that inverted token list goes through
     private Set<String> finalTokenList(ArrayList<String> tokenList)
     {
         removeSpecialCharacterInsideToken(tokenList);
@@ -213,16 +218,18 @@ public class CoreSearchImpl implements CoreSearch {
         removeSingleCharacters(tokenList);
         removeNumbers(tokenList);
         removeEmptyValues(tokenList);
-        synonyms(tokenList);
+        //synonyms(tokenList);
         Set<String> finalTokenizeIndex = new HashSet<>(tokenList);
         return finalTokenizeIndex;
     }
 
+    //didn't get a chance to implement this into the program
     private void synonyms(ArrayList<String> tokenList)
     {
 
     }
 
+    // if there are empty token strings
     private void removeEmptyValues(ArrayList<String> tokenList) {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
         for (String token : duplicateList)
@@ -235,6 +242,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //removing just 1 letter words
     private void removeSingleCharacters(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
@@ -247,6 +255,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //removing numbers
     private void removeNumbers(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
@@ -260,6 +269,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //checking stop words document and if token is a stop word, removing it from the tokenlist
     private void stopWords(ArrayList<String> tokenList)
     {
         Set<String> stopWordsSet  = new HashSet<>(Arrays.asList(stopWordsArray.get(0).getwords().split(" ")));
@@ -273,6 +283,7 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    // checks if there are special charater in the beginning or end of the word
     private void specialCharactersRemoval(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<String>(tokenList);
@@ -321,6 +332,7 @@ public class CoreSearchImpl implements CoreSearch {
      *      https://stackoverflow.com/questions/1795402/java-check-a-string-if-there-is-a-special-character-in-it
      * @param tokenList
      */
+    //checks if there are special character inside the word.  if so, remove it and split the word becuase of space and add it to token list
     private void removeSpecialCharacterInsideToken(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
@@ -337,10 +349,11 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
+    //if tokens ends in a s, remove just the s from the token.
     private void normalizeTokens(ArrayList<String> tokenList)
     {
         ArrayList<String> duplicateList = new ArrayList<>(tokenList);
-        String[] endsWithList = {"s", "ed", "ing", "ies"};
+        String[] endsWithList = {"s"};
         for (int i = 0; i < duplicateList.size(); i++)
         {
             String token = duplicateList.get(i);
