@@ -26,6 +26,7 @@ public class CoreSearchImpl implements CoreSearch {
     Map<Integer ,List<String>> listOfDocTokens = new HashMap<>();
     List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
     Map<Integer, Vector<Double>> tfPerDoc = new HashMap<>();
+    Map<Integer, Double> bm25Index = new HashMap<>();
 
     public void init() {}
 
@@ -87,18 +88,12 @@ public class CoreSearchImpl implements CoreSearch {
     //returning the ranked documents for each query that are greater than 0
     private List<Integer> rankedDocuments(String[] queryTokens, Map<Integer, Double> crossProductList)
     {
-        Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
         List<Integer> mergedDocIds;
         int index = 1;
         int size = listOfDocTokens.size();
         while(index <= size)
         {
-            double sum = dotProduct(vectorQuery, tfPerDoc.get(index));
-            if(sum > 0)
-            {
-                crossProductList.put(index, sum);
-            }
-            index++;
+
         }
 
         mergedDocIds = crossProductList.entrySet().stream()
@@ -111,18 +106,14 @@ public class CoreSearchImpl implements CoreSearch {
         return mergedDocIds;
     }
 
-    //method to compute dotProduct between vector query and vector documnet
-    private double dotProduct(Vector<Double> vectorQuery, Vector<Double> vectorDocument) {
-        double sum = 0;
-        double sumOfVectorQuery = 0;
-        double sumofVectorDocument = 0;
-        for (int i = 0; i < vectorQuery.size(); i++) {
-            sum += vectorQuery.get(i) * vectorDocument.get(i);
-            sumOfVectorQuery += Math.pow(vectorQuery.get(i), 2);
-            sumofVectorDocument += Math.pow(vectorDocument.get(i), 2);
+    private void BM25(String[] queryTokens)
+    {
+        double value;
+        for(int i = 0; i < queryTokens.length; i++)
+        {
+            double idf = invertedIDFIndex.get(queryTokens[i]);
+            
         }
-
-        return (sum / (Math.sqrt(sumOfVectorQuery) * Math.sqrt(sumofVectorDocument)));
     }
 
     //calculate tf/idf for each token in document and adding that value to a vector
@@ -146,19 +137,6 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 
-    //calculate tf/idf for each token in query and adding that value to a vector
-    private Vector<Double> convertQueryToVector(String[] queryTokens)
-    {
-        Vector<Double> temp = new Vector<>(Collections.nCopies(invertedIndex.size(), 0.0));
-        List<String> invertedKeyList = new ArrayList<>(invertedIndex.keySet());
-        for(int i = 0; i < queryTokens.length; i++)
-        {
-            int tempLocation = invertedKeyList.indexOf(queryTokens[i]);
-            temp.set(tempLocation, (1.0/queryTokens.length) * invertedIDFIndex.get(queryTokens[i]));
-        }
-
-        return temp;
-    }
     //creating a map of each document with list of tokens in that document
     private void listOfDocumentTokensList(int listOfDocSize)
     {
