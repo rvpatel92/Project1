@@ -1,7 +1,6 @@
 package edu.kennesaw.cs.core;
 
 import edu.kennesaw.cs.readers.Document;
-import edu.kennesaw.cs.readers.StopWords;
 
 import java.util.List;
 
@@ -29,5 +28,11 @@ public interface CoreSearch {
 
      */
     List<Integer> search(String query);
+
+    /*
+        helper methods to create some variables for search
+     */
+
+    void createHelperVariables(int numOfDocs);
 
 }

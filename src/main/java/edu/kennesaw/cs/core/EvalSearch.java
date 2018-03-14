@@ -32,9 +32,14 @@ public class EvalSearch {
     public static void evalSearch(CoreSearch coreSearch) {
 
         coreSearch.init();
+        int numberofdoc = 0;
         for (Document document : ReadCranfieldData.readDocuments()) {
             coreSearch.addToIndex(document);
+            numberofdoc += 1;
         }
+
+        //method added to create the inverted idf index and the document containing each word
+        coreSearch.createHelperVariables(numberofdoc);
 
         calculateIdeal();
 

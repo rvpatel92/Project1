@@ -25,7 +25,6 @@ public class CoreSearchImpl implements CoreSearch {
     Map<String, Double> invertedIDFIndex = new HashMap<>();
     Map<Integer ,List<String>> listOfDocTokens = new HashMap<>();
     List<StopWords> stopWordsArray = ReadCranfieldData.stopWords();
-    Vector<Double> vectorDocument = new Vector<>();
     Map<Integer, Vector<Double>> tfPerDoc = new HashMap<>();
 
     public void init() {}
@@ -33,7 +32,6 @@ public class CoreSearchImpl implements CoreSearch {
     //craete tokens from the body and title and removing duplicates
     public String[] tokenize(String title, String body) {
         Set<String> tokenizeIndex = new HashSet<>();
-        //Collections.addAll(tokenizeIndex, title.toLowerCase().split(" "));
         Collections.addAll(tokenizeIndex, body.toLowerCase().split(" "));
         ArrayList<String> improveTokens = new ArrayList<>(tokenizeIndex);
         Set<String> finalTokenizeIndex = finalTokenList(improveTokens);
@@ -46,6 +44,13 @@ public class CoreSearchImpl implements CoreSearch {
         for (String token : tokens) {
             addTokenToIndex(token, document.getId());
         }
+    }
+
+    public void createHelperVariables(int numOfDocs)
+    {
+        idfTokenList(numOfDocs);
+        listOfDocumentTokensList(numOfDocs);
+        convertDocumentToVector();
     }
 
     //check whether token exists in inverted index, if so add docId to token, if not then add token with docId
@@ -66,12 +71,7 @@ public class CoreSearchImpl implements CoreSearch {
     //method to begin the process of searching for document that matches query using tf/idf with cosine simularity
     public List<Integer> search(String query) {
         String[] queryTokens = removeNotIndexTokens(query);
-        int listOfDocSize = ReadCranfieldData.readDocuments().size();
         List<Integer> mergedDocIds = new ArrayList<>();
-        if(invertedIDFIndex.size() == 0 || listOfDocTokens.size() == 0) {
-            idfTokenList(listOfDocSize);
-            listOfDocumentTokensList(listOfDocSize);
-        }
         Map<Integer, Double> crossProductList = new HashMap<>();
         if (queryTokens.length == 0)
             return mergedDocIds;
@@ -88,10 +88,6 @@ public class CoreSearchImpl implements CoreSearch {
     private List<Integer> rankedDocuments(String[] queryTokens, Map<Integer, Double> crossProductList)
     {
         Vector<Double> vectorQuery = convertQueryToVector(queryTokens);
-        if(vectorDocument.size() == 0)
-        {
-            convertDocumentToVector();
-        }
         List<Integer> mergedDocIds;
         int index = 1;
         int size = listOfDocTokens.size();
@@ -370,8 +366,3 @@ public class CoreSearchImpl implements CoreSearch {
         }
     }
 }
-//precision number of relevant items retrieved out of retrieved items
-//recall percent of relevance documents returned
-
-
-
