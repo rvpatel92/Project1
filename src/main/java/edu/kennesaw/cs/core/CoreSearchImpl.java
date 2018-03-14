@@ -88,15 +88,16 @@ public class CoreSearchImpl implements CoreSearch {
     //returning the ranked documents for each query that are greater than 0
     private List<Integer> rankedDocuments(String[] queryTokens, Map<Integer, Double> crossProductList)
     {
-        List<Integer> mergedDocIds;
         int index = 1;
+        List<Integer> mergedDocIds;
         int size = listOfDocTokens.size();
         while(index <= size)
         {
-
+            BM25(queryTokens, index);
+            index++;
         }
 
-        mergedDocIds = crossProductList.entrySet().stream()
+        mergedDocIds = bm25Index.entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
@@ -106,14 +107,19 @@ public class CoreSearchImpl implements CoreSearch {
         return mergedDocIds;
     }
 
-    private void BM25(String[] queryTokens)
+    private void BM25(String[] queryTokens, int index)
     {
-        double value;
+        double value = 0;
         for(int i = 0; i < queryTokens.length; i++)
         {
             double idf = invertedIDFIndex.get(queryTokens[i]);
-            
+            double tf = ((1.0)/listOfDocTokens.get(index).size());
+            double numerator = (1.5 + 1) * tf;
+            double denomator = (1.5 * ((1 - .75) + .75 * (listOfDocTokens.get(index).size() / 50)) + tf);
+            value += idf * (numerator / denomator);
         }
+        if(value > 0)
+            bm25Index.put(index, value);
     }
 
     //calculate tf/idf for each token in document and adding that value to a vector
